@@ -1,0 +1,9 @@
+# Maven build output
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Local game save: do not commit a personal in-progress save
+last_exit_save.properties
