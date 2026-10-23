@@ -22,8 +22,8 @@ public class Hrac {
         predmety.add(predmet);
     }
 
-    public void odoberPredmet(String nazov) {
-        predmety.removeIf(p -> p.getNazov().equals(nazov));
+    public void odoberPredmet(Predmet predmet) {
+        predmety.remove(predmet);
     }
 
     // Má hráč predmet s presne týmto názvom?

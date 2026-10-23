@@ -1,11 +1,11 @@
 import java.util.*;
 import java.io.*;
-import java.nio.*;
 import java.nio.file.*;
 
 public class Hra {
 
     private static final Path SAVE_FILE = Paths.get("last_exit_save.properties");
+    private static final int POCET_MIESTNOSTI = 3;
 
     private final Scanner scanner = new Scanner(System.in);
     private final Casovac casovac = new Casovac();
@@ -23,7 +23,6 @@ public class Hra {
     private int kodLaboratorium;
     private int kodZamok;
     private int kodFinalny;
-
     private boolean zamokDeaktivovany;
     private boolean servisnyPanelOtvoreny;
     private boolean chladenieOpravene;
@@ -35,17 +34,13 @@ public class Hra {
     // Možnosť „Koniec“ v hlavnej ponuke sa zobrazí iba po vypršaní časového limitu.
     private boolean menuPoVyprsani = false;
 
-    public Hra() {
-        // Pri prvom spustení bez uloženia sa hra začne priamo v metóde spusti().
-    }
-
     // ---------------------------------------------------------------
     // Príprava a reštart hry (všetko sa vráti do pôvodného stavu)
     // ---------------------------------------------------------------
     private void novaHra() {
         hrac = new Hrac();
         vedec = new Vedec("Dr. Elias Novak");
-        dvereOdomknute = new boolean[2];
+        dvereOdomknute = new boolean[POCET_MIESTNOSTI-1];
         zamokDeaktivovany = false;
         servisnyPanelOtvoreny = false;
         chladenieOpravene = false;
@@ -642,7 +637,10 @@ public class Hra {
             System.out.println("Vzorka sa na toto nehodí. Skús ju použiť na chladiaci systém.");
         } else {
             chladenieOpravene = true;
-            hrac.odoberPredmet(Predmet.VZORKA); // vzorka sa spotrebuje
+            Predmet vzorka = hrac.najdiPredmet(Predmet.VZORKA);
+            if (vzorka != null) {
+                hrac.odoberPredmet(vzorka);
+            } // vzorka sa spotrebuje
             System.out.println("Vyliala si vzorku do chladiaceho okruhu. Systém sa rozbehol, chladenie je OPRAVENÉ.");
             System.out.println("(Chemická vzorka sa spotrebovala.)");
             skontrolujUnik();
@@ -737,7 +735,6 @@ public class Hra {
     private void ulozHru() {
         casovac.pozastav();
         Properties data = new Properties();
-        data.setProperty("formatVersion", "1");
         data.setProperty("player.room", Integer.toString(hrac.getMiestnost()));
         data.setProperty("player.items", spojNazvyPredmetov(hrac.getPredmety()));
         data.setProperty("timer.remainingSeconds", Long.toString(casovac.zostavaSekund()));
@@ -807,28 +804,20 @@ public class Hra {
         }
 
         try {
-            String verzia = povinnaVlastnost(data, "formatVersion");
+            int ulozenaMiestnost = Integer.parseInt(nacitajPovinnuHodnotu(data, "player.room"));
 
-            if (!verzia.equals("1")) {
-                throw new IllegalArgumentException(
-                        "Nepodporovaná verzia uloženej hry."
-                );
-            }
-
-            int ulozenaMiestnost = Integer.parseInt(povinnaVlastnost(data, "player.room"));
-
-            if (ulozenaMiestnost < 0 || ulozenaMiestnost > 2) {
+            if (ulozenaMiestnost < 0 || ulozenaMiestnost >= POCET_MIESTNOSTI) {
                 throw new IllegalArgumentException("Neplatná miestnosť v uloženej hre.");
             }
 
-            long zostavajuceSekundy = Long.parseLong(povinnaVlastnost(data, "timer.remainingSeconds"));
+            long zostavajuceSekundy = Long.parseLong(nacitajPovinnuHodnotu(data, "timer.remainingSeconds"));
             if (zostavajuceSekundy < 0 || zostavajuceSekundy > Casovac.getLimitSekundy()) {
                 throw new IllegalArgumentException("Neplatný čas v uloženej hre.");
             }
 
-            int ulozenyKodLaboratorium = Integer.parseInt(povinnaVlastnost(data, "code.laboratory"));
-            int ulozenyKodZamok = Integer.parseInt(povinnaVlastnost(data, "code.security"));
-            int ulozenyKodFinalny = Integer.parseInt(povinnaVlastnost(data, "code.final"));
+            int ulozenyKodLaboratorium = Integer.parseInt(nacitajPovinnuHodnotu(data, "code.laboratory"));
+            int ulozenyKodZamok = Integer.parseInt(nacitajPovinnuHodnotu(data, "code.security"));
+            int ulozenyKodFinalny = Integer.parseInt(nacitajPovinnuHodnotu(data, "code.final"));
             if (ulozenyKodLaboratorium < 1000 || ulozenyKodLaboratorium > 9999
                     || ulozenyKodZamok < 1000 || ulozenyKodZamok > 9999
                     || ulozenyKodFinalny < 1000 || ulozenyKodFinalny > 9999) {
@@ -854,9 +843,9 @@ public class Hra {
             boolean ulozenePoznamky = nacitajBoolean(data, "notes.read");
             boolean ulozenyDialog = nacitajBoolean(data, "scientist.dialogFinished");
 
-            List<String> predmetyHraca = rozdelNazvy(povinnaVlastnost(data, "player.items"));
+            List<String> predmetyHraca = rozdelNazvy(nacitajPovinnuHodnotu(data, "player.items"));
             List<List<String>> predmetyMiestnosti = new ArrayList<>();
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < POCET_MIESTNOSTI; i++) {
                 predmetyMiestnosti.add(rozdelNazvy(data.getProperty("room." + i + ".items", "")));
             }
 
@@ -908,7 +897,7 @@ public class Hra {
         return data;
     }
 
-    private String povinnaVlastnost(Properties data, String kluc) {
+    private String nacitajPovinnuHodnotu(Properties data, String kluc) {
         String hodnota = data.getProperty(kluc);
         if (hodnota == null) {
             throw new IllegalArgumentException("Chýba údaj: " + kluc);
@@ -917,7 +906,7 @@ public class Hra {
     }
 
     private boolean nacitajBoolean(Properties data, String kluc) {
-        String hodnota = povinnaVlastnost(data, kluc);
+        String hodnota = nacitajPovinnuHodnotu(data, kluc);
         if (!hodnota.equalsIgnoreCase("true") && !hodnota.equalsIgnoreCase("false")) {
             throw new IllegalArgumentException("Neplatná hodnota: " + kluc);
         }
@@ -941,7 +930,7 @@ public class Hra {
 
     private void obnovPredmety(List<String> predmetyHraca, List<List<String>> predmetyMiestnosti) {
         for (Predmet predmet : hrac.getPredmety()) {
-            hrac.odoberPredmet(predmet.getNazov());
+            hrac.odoberPredmet(predmet);
         }
         for (Miestnost miestnost : miestnosti) {
             for (Predmet predmet : miestnost.getPredmety()) {

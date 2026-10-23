@@ -30,6 +30,6 @@ public class Vedec {
                     + "Chladiaci systém v dekontaminačnej komore opravíš tou vzorkou. Potom už len overíš kartu a zadáš finálny kód.\n"
                     + "Ten finálny kód nepoznám, ale terminál ho po odomknutí určite zobrazí. Ponáhľaj sa, nemáme veľa času!";
         }
-        return "Musíš opraviť chladiaci systém a dostať sa k núdzovému východu. Vzorka, karta a finálny kód!";
+        return "Ak si zabudol kód, je to: " + kodZamku + ". Potom musíš opraviť chladiaci systém a dostať sa k núdzovému východu. Vzorka, karta a finálny kód!";
     }
 }

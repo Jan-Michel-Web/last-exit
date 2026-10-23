@@ -35,7 +35,8 @@ class HracTest {
                 new Predmet(Predmet.POZNAMKY, "Poznámky")
         );
 
-        hrac.odoberPredmet(Predmet.POZNAMKY);
+        Predmet poznamky = hrac.najdiPredmet(Predmet.POZNAMKY);
+        hrac.odoberPredmet(poznamky);
 
         assertFalse(hrac.ma(Predmet.POZNAMKY));
         assertNull(hrac.najdiPredmet("poznam"));
